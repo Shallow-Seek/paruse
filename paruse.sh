@@ -17,6 +17,7 @@ for dep in paru fzf; do
     fi
 done
 if [[ ! -d "$config_dir" ]]; then
+    echo " • • • ./config/paruse created. A backup of your packages can be found here..."
     mkdir -p "$config_dir"
 fi
 if [[ ! -s "$packagelist" ]]; then
