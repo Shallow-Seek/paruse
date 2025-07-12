@@ -15,7 +15,7 @@
 
 - Git
 ```
-.
+https://github.com/soulhotel/userChrome-Companion.git
 ```
 
 - Aur
