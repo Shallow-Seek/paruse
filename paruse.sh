@@ -6,9 +6,10 @@
 # paru and fzf are requirements.
 # setup environment
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+config_dir="$HOME/.config/paruse"
+packagelist="$config_dir/my_package_list"
 viewmode="All"
 reviewmode="Review Changes"
-packagelist="$script_dir/my_package_list"
 for dep in paru fzf; do
     if ! command -v "$dep" &>/dev/null; then
         echo "• • • '$dep' not found. Installing..."
@@ -124,7 +125,7 @@ while true; do
             ;;
 
         2)
-            echo -e "\n • Loading Repo(s)..." && parusing="$script_dir/parusing"
+            echo -e "\n • Loading Repo(s)..." && parusing="$config_dir/parusing"
             comm -23 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$//' > "$parusing"
             comm -12 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$/ (installed)/' >> "$parusing"
             sort "$parusing" -o "$parusing"
@@ -244,8 +245,8 @@ while true; do
             ;;
         5)
             clear
-            backup_files=(packagelist-*)
-            if [[ ${backup_files[0]} == "packagelist-*" ]]; then
+            backup_files=("$config_dir/my_package_list"-*)
+            if [[ ${backup_files[0]} == "my_package_list_*" ]]; then
                 backup_files=()
             fi
             if [[ ${#backup_files[@]} -gt 0 ]]; then
