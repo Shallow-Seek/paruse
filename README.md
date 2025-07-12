@@ -1,2 +1,29 @@
+<div align="center">
+
 # Paruse
- An interactive package manager for Arch Linux using paru and fzf
+
+###### . . . An Interactive Package Management Tool for Arch Linux
+
+</div>
+
+## What That Script Do?:
+
+- Paruse uses paru & fzf, to present & manage packages through install/uninstalls, purging, backups, & more.
+- More includes: browsing repositories & package data while sorting through official/aur channels, system sync, update, & internal bash alias setup.
+
+## Installation
+
+- Git
+```
+.
+```
+
+- Aur
+> Does the same thing as git but also sets `paruse` as a bash alias
+```
+.
+```
+
+## Preview
+
+
