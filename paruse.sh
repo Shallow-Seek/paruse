@@ -16,6 +16,9 @@ for dep in paru fzf; do
         sudo pacman -Sy --noconfirm "$dep"
     fi
 done
+if [[ ! -d "$config_dir" ]]; then
+    mkdir -p "$config_dir"
+fi
 if [[ ! -s "$packagelist" ]]; then
     echo " • • • packagelist is empty or missing. Populating with installed packages..."
     paru -Qqe | sort > "$packagelist"
