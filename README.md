@@ -19,7 +19,6 @@ https://github.com/soulhotel/userChrome-Companion.git
 ```
 
 - Aur
-> Does the same thing as git but also sets `paruse` as a bash alias
 ```
 .
 ```
