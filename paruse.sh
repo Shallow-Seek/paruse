@@ -46,7 +46,8 @@ while true; do
     echo " s • Sync current package list"
     echo " b • Backup current package list"
     echo " a • Set a custom bash_alias for Paruse"
-    echo " q • Press q, Q, or Enter to exist"
+    echo " h • Type (h,H,help) for an overview of each command"
+    echo " q • Type (q,Q,Enter) to exist"
     echo -e "\n• • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • \n"
     read -rp $'\n Pick a number, any number: ' choice
 
@@ -127,51 +128,63 @@ while true; do
                     ;;
             esac
             ;;
-
         2)
             echo -e "\n • Loading Repo(s)..." && parusing="$config_dir/parusing"
             comm -23 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$//' > "$parusing"
             comm -12 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$/ (installed)/' >> "$parusing"
             sort "$parusing" -o "$parusing"
 
-            pkg_to_add=$(fzf --print-query --no-multi --prompt="Add package: " \
+            fzf_output=$(fzf \
+                --print-query \
                 --preview='paru -Si $(echo {} | sed "s/ (installed)//")' \
                 --layout=reverse \
+                --prompt="Enter/DBL-Click a package to add: " \
                 --preview-window=wrap:50% \
                 < "$parusing")
 
-            pkg_to_add=$(echo "$pkg_to_add" | head -n1 | sed 's/ (installed)//')
+            query=$(echo "$fzf_output" | head -n1)
+            selection=$(echo "$fzf_output" | sed -n '2p' | sed 's/ (installed)//')
 
-            if [[ -z "$pkg_to_add" ]]; then
+            if [[ -n "$selection" ]]; then
+                pkg_input="$selection"
+            else
+                pkg_input="$query"
+            fi
+
+            if [[ -z "$pkg_input" ]]; then
                 echo -e "\n • No package name entered."
                 sleep 2
-            elif grep -Fxq "$pkg_to_add" "$packagelist"; then
-                echo " • Package '$pkg_to_add' is already in the list."
-                sleep 2
             else
-                echo -e "\n • '$pkg_to_add' marked for installation...\n"
-                case "$reviewmode" in
-                    "Review Changes")
-                        paru -S --needed "$pkg_to_add"
-                        ;;
-                    "Skip Review")
-                        paru -S --needed --skipreview --noconfirm "$pkg_to_add"
-                        ;;
-                    "Only Show Progress")
-                        paru -S --needed --quiet --noconfirm "$pkg_to_add"
-                        ;;
-                    *)
-                        paru -S --needed "$pkg_to_add"
-                        ;;
-                esac
-                if [[ $? -eq 0 ]]; then
-                    echo "$pkg_to_add" >> "$packagelist"
-                    echo -e "\n • Package '$pkg_to_add' installed and added to list."
-                    read -rp " • Press Enter to continue..."
-                else
-                    echo -e "\n • Installation failed or canceled. Nothing added to list."
-                    read -rp " • Press Enter to continue..."
-                fi
+                for pkg in $pkg_input; do
+                    if grep -Fxq "$pkg" "$packagelist"; then
+                        echo " • Package '$pkg' is already in the list."
+                        sleep 1
+                    else
+                        echo -e "\n • '$pkg' marked for installation...\n"
+                        case "$reviewmode" in
+                            "Review Changes")
+                                paru -S --needed "$pkg"
+                                ;;
+                            "Skip Review")
+                                paru -S --needed --skipreview --noconfirm "$pkg"
+                                ;;
+                            "Only Show Progress")
+                                paru -S --needed --quiet --noconfirm "$pkg"
+                                ;;
+                            *)
+                                paru -S --needed "$pkg"
+                                ;;
+                        esac
+                        if [[ $? -eq 0 ]]; then
+                            echo "$pkg" >> "$packagelist"
+                            echo -e "\n • Package '$pkg' installed and added to list."
+                            read -rp " • Press Enter to continue..."
+                        else
+                            echo -e "\n • Installation failed or canceled for '$pkg'. Nothing added to list."
+                            read -rp " • Press Enter to continue..."
+                        fi
+                    fi
+                done
             fi
             ;;
         3)
@@ -320,6 +333,55 @@ while true; do
                     sleep 4
                 fi
             fi
+            ;;
+        h|H|help)
+            echo "
+    1 • View package list
+        Presents a list of explicitly installed packages on this system using:
+        paru -Qqe | sort > \"\$packagelist\"
+        This list can be filtered (v) by all, only aur, no aur, packages.
+
+    2 • Add package
+        Presents a query for all arch/aur repositories using:
+        paru -Slq | fzf --preview='paru -Si {}'
+        User can browse packages and package data/details, see whats installed, then install packages by typing a name or double-clicking it.
+        Multiple packages (e.g., \`package1 package2\`) can be entered for batch install.
+        Installation behavior is controlled by the review mode (r): Review Changes, Skip Review, or Only Show Progress.
+
+    3 • Remove package
+        Presents a searchable list of packages currently installed on the system using:
+        paru -Slq | fzf --preview='paru -Si {}'
+        Inputting a package or double clicking it, proceeds with:
+        paru -R package
+
+    4 • Purge package
+        Presents a searchable list of packages currently installed on the system using:
+        paru -Slq | fzf --preview='paru -Si {}'
+        Inputting a package or double clicking it, proceeds with:
+        paru -Rns package
+
+    5 • Install full package list
+        Reads from your saved packagelist and installs any missing packages:
+        paru -S --needed \$(< \"\$packagelist\")
+        Installation behavior is controlled by the review mode (r): Review Changes, Skip Review, or Only Show Progress.
+
+    U • Update system packages
+        Performs a full system upgrade using:
+        paru -Syu
+
+    S • Sync current package list
+        Updates the saved package list file to match the currently installed explicit packages:
+        paru -Qqe | sort > \"\$packagelist\"
+
+    B • Backup current package list
+        Creates a timestamped backup of your current package list in the backups folder:
+        \$packagelist.backups/\$(date +%F_%H-%M-%S)
+        This points to .config/paruse/
+
+    A • Set custom bash_alias for Paruse
+        Allows you to set an alias (e.g., 'paruse') for quick access to this tool from your shell config.
+        "
+            read -rp "Press Enter to continue..."
             ;;
         q|Q|'')
             echo -e "\n Cya next time"
