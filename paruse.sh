@@ -25,373 +25,393 @@ if [[ ! -s "$packagelist" ]]; then
     paru -Qqe | sort > "$packagelist"
     sleep 4
 fi
+blueish="\e[38;2;131;170;208m"; yellowish="\e[38;2;175;175;135m"; nocolor="\e[0m"
+options=(
+    "1 • View package list"
+    "2 • Add package"
+    "3 • Remove package"
+    "4 • Purge package"
+    "•"
+    "5 • Toggle view mode"
+    "6 • Toggle review mode"
+    "•"
+    "7 • Update system packages"
+    "8 • Sync current package list"
+    "9 • Install full package list"
+    "0 • Backup current package list"
+    "•"
+    "11 • Fetch Arch Linux News"
+    "12 • Set a custom bash_alias for Paruse"
+    "q • Quit"
+)
+pstate="
+Paruse: Package Management for packages that you just cant live without
+View Mode: ${blueish}${viewmode}${nocolor}
+Review Mode: ${blueish}${reviewmode}${nocolor}
+"
+help="
+1 • View package list
+    Presents a list of explicitly installed packages on this system using:
+    ${yellowish}paru -Qqe | sort > \"\$packagelist\"${nocolor}
+    This list can be filtered by all, only aur, no aur, packages using:
+    ${yellowish}6 • Toggle view mode${nocolor}
+
+2 • Add package
+    Presents a query for all arch/aur repositories using:
+    ${yellowish}paru -Slq | fzf --preview='paru -Si \{\}'${nocolor}
+    User can browse packages and package data/details, see whats installed.
+    Then install packages by typing a name or double-clicking it.
+    Multiple packages (package1 package2) can be input for batch install.
+    Install behavior can be set to Review Changes, Skip Review, or Progress using:
+    ${yellowish}7 • Toggle review mode${nocolor}
+
+3 • Remove package
+    Presents a searchable list of packages currently installed on the system using:
+    ${yellowish}paru -Slq | fzf --preview='paru -Si \{\}'${nocolor}
+    Inputting a package or double clicking it, proceeds with:
+    ${yellowish}paru -R package${nocolor}
+
+4 • Purge package
+    Presents a searchable list of packages currently installed on the system using:
+    ${yellowish}paru -Slq | fzf --preview='paru -Si \{\}'${nocolor}
+    Inputting a package or double clicking it, proceeds with:
+    ${yellowish}paru -Rns package${nocolor}
+
+7 • Update system packages
+    Performs a full system upgrade using:
+    ${yellowish}paru -Syu${nocolor}
+
+8 • Sync current package list
+    Updates the saved package list file to match the currently installed explicit packages:
+    ${yellowish}paru -Qqe | sort > \"\$packagelist\"${nocolor}
+
+9 • Install full package list
+    Reads from your saved packagelist and installs any missing packages:
+    ${yellowish}paru -S --needed \$(< \"\$packagelist\")${nocolor}
+    Install behavior can be set to Review Changes, Skip Review, or Only Show Progress using:
+    ${yellowish}7 • Toggle review mode${nocolor}
+
+0 • Backup current package list
+    Creates a timestamped backup of your current package list in the backups folder:
+    ${yellowish}\$packagelist.backups/\$(date +%F_%H-%M-%S)${nocolor}
+    This points to .config/paruse/
+
+11• Fetch Arch Linux News
+    Fetches Arch Linux News via:
+    ${yellowish}paru -Pw${nocolor}
+
+12• Set custom bash_alias for Paruse
+    Allows you to set an alias (e.g., ${yellowish}paruse${nocolor}) for quick access to this tool from your shell config.
+"
 
 # interactive process
-while true; do
-    clear
-    echo -e "\n• • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • \n"
-    echo -e " Paruse: Package Management for packages that you just can't live without\n"
-    echo -e " View Mode: \e[34m$viewmode\e[0m"
-    echo -e " Review Mode: \e[34m$reviewmode\e[0m"
-    echo
-    echo " 1 • View package list"
-    echo " 2 • Add package"
-    echo " 3 • Remove package"
-    echo " 4 • Purge package"
-    echo " 5 • Install full package list"
-    echo
-    echo " v • Toggle view mode"
-    echo " r • Toggle review mode"
-    echo " u • Update system packages"
-    echo " s • Sync current package list"
-    echo " b • Backup current package list"
-    echo " a • Set a custom bash_alias for Paruse"
-    echo " h • Type (h,H,help) for an overview of each command"
-    echo " q • Type (q,Q,Enter) to exist"
-    echo -e "\n• • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • • \n"
-    read -rp $'\n Pick a number, any number: ' choice
+main_menu() {
+    local choice
+    choice=$(printf '%s\n' "${options[@]}" | fzf \
+        --ansi \
+        --layout=reverse \
+        --prompt="Paruse › " \
+        --height=95% \
+        --preview-window=right:70%:wrap \
+        --preview="echo -e '$pstate\n$help'"
+        )
 
-    case $choice in
-        u|U)
-            echo && paru -Syu
-            echo && read -rp " • Press Enter to continue..."
+    case "$choice" in
+        "1 • View package list") view_package_list ;;
+        "2 • Add package") add_package ;;
+        "3 • Remove package") remove_package ;;
+        "4 • Purge package") purge_package ;;
+        "5 • Toggle view mode") toggle_view_mode ;;
+        "6 • Toggle review mode") toggle_review_mode ;;
+        "7 • Update system packages") paru -Syu && read -rp " • Press Enter to continue..." ;;
+        "8 • Sync current package list") sync_package_list ;;
+        "9 • Install full package list") install_list ;;
+        "0 • Backup current package list") backup_package_list ;;
+        "11 • Fetch Arch Linux News") fetch_news ;;
+        "12 • Set a custom bash_alias for Paruse") set_alias ;;
+        "q • Quit"|"") echo "Cya!"; exit ;;
+    esac
+}
+
+toggle_view_mode() {
+    case $viewmode in
+        "All")
+            viewmode="Only AUR"
             ;;
-        s|S)
-            if [[ ! -s "$packagelist" ]]; then
-                echo -e "\n • packagelist is empty or missing. Populating with installed packages..."
-            else
-                echo -e "\n • packagelist exists. Syncing installed packages..."
-                rm -f "$packagelist"
-            fi
-            paru -Qqe | sort > "$packagelist"
-            sleep 2
+        "Only AUR")
+            viewmode="No AUR"
             ;;
-        b)
-            backup_file="${packagelist}-$(date +'%Y%m%d-%H%M%S')"
-            cp "$packagelist" "$backup_file" && \
-            echo -e "\n • Backup created: $backup_file" || \
-            echo -e "\n • Backup failed..."
-            sleep 2
-            ;;
-        v|V)
-            case $viewmode in
-                "All")
-                    viewmode="Only AUR"
-                    ;;
-                "Only AUR")
-                    viewmode="No AUR"
-                    ;;
-                "No AUR" | *)
-                    viewmode="All"
-                    ;;
-            esac
-            sed -i "0,/^viewmode=/s|^viewmode=.*|viewmode=\"$viewmode\"|" "$0"
-            ;;
-        r|R)
-            case $reviewmode in
-                "Review Changes")
-                    reviewmode="Skip Review"
-                    ;;
-                "Skip Review")
-                    reviewmode="Only Progress"
-                    ;;
-                "Only Show Progress" | *)
-                    reviewmode="Review Changes"
-                    ;;
-            esac
-            sed -i "0,/^reviewmode=/s|^reviewmode=.*|reviewmode=\"$reviewmode\"|" "$0"
-            ;;
-        1)
-            case $viewmode in
-                "Only AUR")
-                    mapfile -t aur_pkgs < <(paru -Qmq)
-                    grep -Fx -f <(printf '%s\n' "${aur_pkgs[@]}") "$packagelist" | fzf \
-                        --preview 'pacman -Qil {}' \
-                        --layout=reverse \
-                        --prompt="Press ESC to return " \
-                        --preview-window=wrap:70%
-                    ;;
-                "No AUR")
-                    mapfile -t aur_pkgs < <(paru -Qmq)
-                    grep -Fxv -f <(printf '%s\n' "${aur_pkgs[@]}") "$packagelist" | fzf \
-                        --preview 'pacman -Qil {}' \
-                        --layout=reverse \
-                        --prompt="Press ESC to return " \
-                        --preview-window=wrap:70%
-                    ;;
-                *)
-                    fzf < "$packagelist" \
-                        --preview 'pacman -Qil {}' \
-                        --layout=reverse \
-                        --prompt="Press ESC to return " \
-                        --preview-window=wrap:70%
-                    ;;
-            esac
-            ;;
-        2)
-            echo -e "\n • Loading Repo(s)..." && parusing="$config_dir/parusing"
-            comm -23 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$//' > "$parusing"
-            comm -12 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$/ (installed)/' >> "$parusing"
-            sort "$parusing" -o "$parusing"
-
-            fzf_output=$(fzf \
-                --print-query \
-                --preview='paru -Si $(echo {} | sed "s/ (installed)//")' \
-                --layout=reverse \
-                --prompt="Enter/DBL-Click a package to add: " \
-                --preview-window=wrap:50% \
-                < "$parusing")
-
-            query=$(echo "$fzf_output" | head -n1)
-            selection=$(echo "$fzf_output" | sed -n '2p' | sed 's/ (installed)//')
-
-            if [[ -n "$selection" ]]; then
-                pkg_input="$selection"
-            else
-                pkg_input="$query"
-            fi
-
-            if [[ -z "$pkg_input" ]]; then
-                echo -e "\n • No package name entered."
-                sleep 2
-            else
-                for pkg in $pkg_input; do
-                    if grep -Fxq "$pkg" "$packagelist"; then
-                        echo " • Package '$pkg' is already in the list."
-                        sleep 1
-                    else
-                        echo -e "\n • '$pkg' marked for installation...\n"
-                        case "$reviewmode" in
-                            "Review Changes")
-                                paru -S --needed "$pkg"
-                                ;;
-                            "Skip Review")
-                                paru -S --needed --skipreview --noconfirm "$pkg"
-                                ;;
-                            "Only Show Progress")
-                                paru -S --needed --quiet --noconfirm "$pkg"
-                                ;;
-                            *)
-                                paru -S --needed "$pkg"
-                                ;;
-                        esac
-                        if [[ $? -eq 0 ]]; then
-                            echo "$pkg" >> "$packagelist"
-                            echo -e "\n • Package '$pkg' installed and added to list."
-                            read -rp " • Press Enter to continue..."
-                        else
-                            echo -e "\n • Installation failed or canceled for '$pkg'. Nothing added to list."
-                            read -rp " • Press Enter to continue..."
-                        fi
-                    fi
-                done
-            fi
-            ;;
-        3)
-            pkg_to_remove=$(fzf < "$packagelist" \
-                --preview='pacman -Qil {}' \
-                --layout=reverse \
-                --prompt="ESC to exit | Enter/DBL-Click a package to remove: " \
-                --preview-window=wrap:50%)
-
-            if [[ -n "$pkg_to_remove" ]]; then
-                echo -e "\n • '$pkg_to_remove' marked for removal...\n"
-                case "$reviewmode" in
-                    "Review Changes")
-                        paru -R "$pkg_to_remove"
-                        ;;
-                    "Skip Review")
-                        paru -R --noconfirm "$pkg_to_remove"
-                        ;;
-                    "Only Show Progress")
-                        paru -R --noconfirm "$pkg_to_remove"
-                        ;;
-                    *)
-                        paru -R "$pkg_to_remove"
-                        ;;
-                esac
-
-                if [[ $? -eq 0 ]]; then
-                    grep -Fxv "$pkg_to_remove" "$packagelist" > "${packagelist}.tmp" && mv "${packagelist}.tmp" "$packagelist"
-                    echo -e "\n • Package '$pkg_to_remove' removed from system and list."
-                    read -rp " • Press Enter to continue..."
-                else
-                    echo -e "\n • Package removal failed or canceled. List unchanged."
-                    read -rp " • Press Enter to continue..."
-                fi
-            else
-                echo -e "\n • No package selected."
-                sleep 2
-            fi
-            ;;
-        4)
-            pkg_to_remove=$(fzf < "$packagelist" \
-                --preview='pacman -Qil {}' \
-                --layout=reverse \
-                --prompt="ESC to exit | Enter/DBL-Click a package to purge: " \
-                --preview-window=wrap:50%)
-
-            if [[ -n "$pkg_to_remove" ]]; then
-                echo -e "\n • '$pkg_to_remove' marked for removal...\n"
-                case "$reviewmode" in
-                    "Review Changes")
-                        paru -Rns "$pkg_to_remove"
-                        ;;
-                    "Skip Review")
-                        paru -Rns --noconfirm "$pkg_to_remove"
-                        ;;
-                    "Only Show Progress")
-                        paru -Rns --noconfirm "$pkg_to_remove"
-                        ;;
-                    *)
-                        paru -Rns "$pkg_to_remove"
-                        ;;
-                esac
-                if [[ $? -eq 0 ]]; then
-                    grep -Fxv "$pkg_to_remove" "$packagelist" > "${packagelist}.tmp" && mv "${packagelist}.tmp" "$packagelist"
-                    echo -e "\n • Package '$pkg_to_remove' removed from system and list."
-                    read -rp " • Press Enter to continue..."
-                else
-                    echo -e "\n • Package removal failed or canceled. List unchanged."
-                    read -rp " • Press Enter to continue..."
-                fi
-            else
-                echo -e "\n • No package selected."
-                sleep 2
-            fi
-            ;;
-        5)
-            clear
-            backup_files=("$config_dir/my_package_list"-*)
-            if [[ ${backup_files[0]} == "my_package_list_*" ]]; then
-                backup_files=()
-            fi
-            if [[ ${#backup_files[@]} -gt 0 ]]; then
-                echo -e "\n Multiple packagelists found:\n"
-                for i in "${!backup_files[@]}"; do
-                    echo "$((i+1))) ${backup_files[i]}"
-                done
-                echo "$(( ${#backup_files[@]} + 1 ))) Use current packagelist"
-                echo "$(( ${#backup_files[@]} + 2 ))) Cancel"
-                echo
-                read -rp " Choose a packagelist to install everything from: " choice
-                if (( choice >= 1 && choice <= ${#backup_files[@]} )); then
-                    selected_file="${backup_files[choice-1]}"
-                    echo -e "\n • Using backup file: $selected_file"
-                    packagelist="$selected_file"
-                elif (( choice == ${#backup_files[@]} + 1 )); then
-                    echo -e "\n • Using current packagelist."
-                else
-                    echo -e "\n • Cancelled."
-                    sleep 2
-                fi
-            else
-                echo
-            fi
-            echo -e "\n • Installing packages from: $packagelist\n"
-            case "$reviewmode" in
-                "Review Changes")
-                    paru -S --needed $(cat "$packagelist")
-                    ;;
-                "Skip Review")
-                    paru -S --needed --skipreview --noconfirm $(cat "$packagelist")
-                    ;;
-                "Only Show Progress")
-                    paru -S --needed --quiet --noconfirm --skipreview $(cat "$packagelist")
-                    ;;
-                *)
-                    paru -S --needed $(cat "$packagelist")
-                    ;;
-            esac
-            if [[ $? -eq 0 ]]; then
-                echo -e "\n Installation complete." && read -rp " • Press Enter to continue..."
-            else
-                echo -e "\n • Installation failed or canceled." && read -rp " • Press Enter to continue..."
-            fi
-            ;;
-        a)
-            echo -e "\n • Set a custom bash alias for Paruse Package Management. This lets you open a terminal and type your alias (e.g. paruse) to run this menu."
-            echo -ne "\n • Enter a custom alias: "
-            read -r user_alias
-            script_path="$(readlink -f "$0")"
-            if [[ -z "$user_alias" ]]; then
-                echo -e "\n • Canceled..."
-                sleep 2
-            else
-                alias_line="alias $user_alias='$script_path'"
-                alias_file="$HOME/.bash_aliases"
-                if [[ ! -f "$alias_file" ]]; then
-                    alias_file="$HOME/.bashrc"
-                fi
-                if grep -Fxq "$alias_line" "$alias_file"; then
-                    echo -e "\n • Alias '$user_alias' already exists in $alias_file"
-                    sleep 3
-                else
-                    echo "$alias_line" >> "$alias_file"
-                    echo -e "\n • Alias added to $alias_file"
-                    echo -e "   Please reload your shell or run 'source $alias_file' to activate the alias."
-                    sleep 4
-                fi
-            fi
-            ;;
-        h|H|help)
-            echo "
-    1 • View package list
-        Presents a list of explicitly installed packages on this system using:
-        paru -Qqe | sort > \"\$packagelist\"
-        This list can be filtered (v) by all, only aur, no aur, packages.
-
-    2 • Add package
-        Presents a query for all arch/aur repositories using:
-        paru -Slq | fzf --preview='paru -Si {}'
-        User can browse packages and package data/details, see whats installed, then install packages by typing a name or double-clicking it.
-        Multiple packages (e.g., \`package1 package2\`) can be entered for batch install.
-        Installation behavior is controlled by the review mode (r): Review Changes, Skip Review, or Only Show Progress.
-
-    3 • Remove package
-        Presents a searchable list of packages currently installed on the system using:
-        paru -Slq | fzf --preview='paru -Si {}'
-        Inputting a package or double clicking it, proceeds with:
-        paru -R package
-
-    4 • Purge package
-        Presents a searchable list of packages currently installed on the system using:
-        paru -Slq | fzf --preview='paru -Si {}'
-        Inputting a package or double clicking it, proceeds with:
-        paru -Rns package
-
-    5 • Install full package list
-        Reads from your saved packagelist and installs any missing packages:
-        paru -S --needed \$(< \"\$packagelist\")
-        Installation behavior is controlled by the review mode (r): Review Changes, Skip Review, or Only Show Progress.
-
-    U • Update system packages
-        Performs a full system upgrade using:
-        paru -Syu
-
-    S • Sync current package list
-        Updates the saved package list file to match the currently installed explicit packages:
-        paru -Qqe | sort > \"\$packagelist\"
-
-    B • Backup current package list
-        Creates a timestamped backup of your current package list in the backups folder:
-        \$packagelist.backups/\$(date +%F_%H-%M-%S)
-        This points to .config/paruse/
-
-    A • Set custom bash_alias for Paruse
-        Allows you to set an alias (e.g., 'paruse') for quick access to this tool from your shell config.
-        "
-            read -rp "Press Enter to continue..."
-            ;;
-        q|Q|'')
-            echo -e "\n Cya next time"
-            sleep 2
-            exit
-            ;;
-        *)
-            echo -e "\n...Try again."
-            sleep 2
+        "No AUR" | *)
+            viewmode="All"
             ;;
     esac
+    sed -i "0,/^viewmode=/s|^viewmode=.*|viewmode=\"$viewmode\"|" "$0"
+    pstate="
+Paruse: Package Management for packages that you just cant live without
+View Mode: ${blueish}${viewmode}${nocolor}
+Review Mode: ${blueish}${reviewmode}${nocolor}
+"
+}
+toggle_review_mode() {
+    case $reviewmode in
+        "Review Changes")
+            reviewmode="Skip Review"
+            ;;
+        "Skip Review")
+            reviewmode="Only Progress"
+            ;;
+        "Only Show Progress" | *)
+            reviewmode="Review Changes"
+            ;;
+    esac
+    sed -i "0,/^reviewmode=/s|^reviewmode=.*|reviewmode=\"$reviewmode\"|" "$0"
+    pstate="
+Paruse: Package Management for packages that you just cant live without
+View Mode: ${blueish}${viewmode}${nocolor}
+Review Mode: ${blueish}${reviewmode}${nocolor}
+"
+}
+view_package_list() {
+    case $viewmode in
+        "Only AUR")
+            mapfile -t aur_pkgs < <(paru -Qmq)
+            grep -Fx -f <(printf '%s\n' "${aur_pkgs[@]}") "$packagelist" | fzf \
+                --preview 'pacman -Qil {}' \
+                --layout=reverse \
+                --prompt="Press ESC to return " \
+                --preview-window=wrap:70%
+            ;;
+        "No AUR")
+            mapfile -t aur_pkgs < <(paru -Qmq)
+            grep -Fxv -f <(printf '%s\n' "${aur_pkgs[@]}") "$packagelist" | fzf \
+                --preview 'pacman -Qil {}' \
+                --layout=reverse \
+                --prompt="Press ESC to return " \
+                --preview-window=wrap:70%
+            ;;
+        *)
+            fzf < "$packagelist" \
+                --preview 'pacman -Qil {}' \
+                --layout=reverse \
+                --prompt="Press ESC to return " \
+                --preview-window=wrap:70%
+            ;;
+    esac
+}
+add_package() {
+    echo -e "\n • Loading Repo(s)..."
+    parusing="$config_dir/parusing"
+    comm -23 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$//' > "$parusing"
+    comm -12 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$/ (installed)/' >> "$parusing"
+    sort "$parusing" -o "$parusing"
+
+    fzf_output=$(fzf \
+        --print-query \
+        --preview='paru -Si $(echo {} | sed "s/ (installed)//")' \
+        --layout=reverse \
+        --prompt="Enter/DBL-Click a package to add: " \
+        --preview-window=wrap:50% \
+        < "$parusing")
+
+    query=$(echo "$fzf_output" | head -n1)
+    selection=$(echo "$fzf_output" | sed -n '2p' | sed 's/ (installed)//')
+
+    if [[ -n "$selection" ]]; then
+        pkg_input="$selection"
+    else
+        pkg_input="$query"
+    fi
+
+    if [[ -z "$pkg_input" ]]; then
+        echo -e "\n • No package name entered."
+        sleep 2
+    else
+        for pkg in $pkg_input; do
+            if grep -Fxq "$pkg" "$packagelist"; then
+                echo " • Package '$pkg' is already in the list."
+                sleep 1
+            else
+                echo -e "\n • '$pkg' marked for installation...\n"
+                case "$reviewmode" in
+                    "Review Changes")
+                        paru -S --needed "$pkg"
+                        ;;
+                    "Skip Review")
+                        paru -S --needed --skipreview --noconfirm "$pkg"
+                        ;;
+                    "Only Show Progress")
+                        paru -S --needed --quiet --noconfirm "$pkg"
+                        ;;
+                    *)
+                        paru -S --needed "$pkg"
+                        ;;
+                esac
+                if [[ $? -eq 0 ]]; then
+                    echo "$pkg" >> "$packagelist"
+                    echo -e "\n • Package '$pkg' installed and added to list."
+                    read -rp " • Press Enter to continue..."
+                else
+                    echo -e "\n • Installation failed or canceled for '$pkg'. Nothing added to list."
+                    read -rp " • Press Enter to continue..."
+                fi
+            fi
+        done
+    fi
+}
+remove_package() {
+    pkg_to_remove=$(fzf < "$packagelist" \
+        --preview='pacman -Qil {}' \
+        --layout=reverse \
+        --prompt="ESC to exit | Enter/DBL-Click a package to remove: " \
+        --preview-window=wrap:50%)
+
+    if [[ -n "$pkg_to_remove" ]]; then
+        echo -e "\n • '$pkg_to_remove' marked for removal...\n"
+        case "$reviewmode" in
+            "Review Changes")
+                paru -R "$pkg_to_remove"
+                ;;
+            "Skip Review" | "Only Show Progress")
+                paru -R --noconfirm "$pkg_to_remove"
+                ;;
+            *)
+                paru -R "$pkg_to_remove"
+                ;;
+        esac
+
+        if [[ $? -eq 0 ]]; then
+            grep -Fxv "$pkg_to_remove" "$packagelist" > "${packagelist}.tmp" && mv "${packagelist}.tmp" "$packagelist"
+            echo -e "\n • Package '$pkg_to_remove' removed from system and list."
+            read -rp " • Press Enter to continue..."
+        else
+            echo -e "\n • Package removal failed or canceled. List unchanged."
+            read -rp " • Press Enter to continue..."
+        fi
+    else
+        echo -e "\n • No package selected."
+        sleep 1
+    fi
+}
+purge_package() {
+    pkg_to_remove=$(fzf < "$packagelist" \
+        --preview='pacman -Qil {}' \
+        --layout=reverse \
+        --prompt="ESC to exit | Enter/DBL-Click a package to purge: " \
+        --preview-window=wrap:50%)
+
+    if [[ -n "$pkg_to_remove" ]]; then
+        echo -e "\n • '$pkg_to_remove' marked for removal...\n"
+        case "$reviewmode" in
+            "Review Changes")
+                paru -Rns "$pkg_to_remove"
+                ;;
+            "Skip Review" | "Only Show Progress")
+                paru -Rns --noconfirm "$pkg_to_remove"
+                ;;
+            *)
+                paru -Rns "$pkg_to_remove"
+                ;;
+        esac
+        if [[ $? -eq 0 ]]; then
+            grep -Fxv "$pkg_to_remove" "$packagelist" > "${packagelist}.tmp" && mv "${packagelist}.tmp" "$packagelist"
+            echo -e "\n • Package '$pkg_to_remove' removed from system and list."
+            read -rp " • Press Enter to continue..."
+        else
+            echo -e "\n • Package removal failed or canceled. List unchanged."
+            read -rp " • Press Enter to continue..."
+        fi
+    else
+        echo -e "\n • No package selected."
+        sleep 1
+    fi
+}
+install_list() {
+    clear
+    local packagelists preview_text choice selected_file
+
+    # Gather backup files
+    mapfile -t packagelists < <(find "$config_dir" -maxdepth 1 -name "my_package_list*" -printf "%f\n" | sort)
+
+    # Ensure the current one is always available
+    if [[ ! " ${packagelists[*]} " =~ " my_package_list " ]]; then
+        packagelists+=("my_package_list")
+    fi
+
+    preview_text=$(
+        cat <<EOF
+Paruse stores your currently installed packagelist in:
+${yellowish}${HOME}/.config/paruse${nocolor}
+
+Any backup made via:
+${yellowish}0 • Backup current package list${nocolor}
+Are stored as:
+${yellowish}packagelist-DateAndTime${nocolor}
+
+Selecting a packagelist here will attempt to install (if not already installed)
+all packages listed inside the file.
+EOF
+    )
+
+    # Prompt using fzf
+    selected_file=$(printf "%s\n" "${packagelists[@]}" | \
+        fzf --prompt="Select packagelist: " \
+            --header="Choose a packagelist to install from" \
+            --layout=reverse \
+            --preview='echo -e "'"$preview_text"'" ; echo ; echo "File Content:" ; cat "'"$config_dir"'/"{}' \
+            --preview-window=right:70%:wrap)
+
+    if [[ -z $selected_file ]]; then
+        return
+    fi
+
+    echo -e "\n • Using file: $selected_file"
+    packagelist="$config_dir/$selected_file"
+    echo -e "\n • Installing packages from: $packagelist\n"
+
+    case "$reviewmode" in
+        "Review Changes")
+            paru -S --needed $(cat "$packagelist")
+            ;;
+        "Skip Review")
+            paru -S --needed --skipreview --noconfirm $(cat "$packagelist")
+            ;;
+        "Only Show Progress")
+            paru -S --needed --quiet --noconfirm --skipreview $(cat "$packagelist")
+            ;;
+        *)
+            paru -S --needed $(cat "$packagelist")
+            ;;
+    esac
+
+    echo
+    read -rp " • Press Enter to continue..."
+}
+backup_package_list() {
+    backup_file="${packagelist}-$(date +'%Y%m%d-%H%M%S')"
+    cp "$packagelist" "$backup_file" && \
+    echo -e "\n • Backup created: $backup_file" || \
+    echo -e "\n • Backup failed..."
+    sleep 2
+}
+fetch_news() {
+    clear
+    echo -e "\n • Fetching Arch Linux News..."
+    paru -Pw
+    read -rp " • Press Enter to continue..."
+}
+sync_package_list() {
+    if [[ ! -s "$packagelist" ]]; then
+        echo -e "\n • packagelist is empty or missing. Populating with installed packages..."
+    else
+        echo -e "\n • packagelist exists. Syncing installed packages..."
+        rm -f "$packagelist"
+    fi
+    paru -Qqe | sort > "$packagelist"
+    sleep 2
+}
+
+while true; do
+    clear
+    main_menu
 done
 
