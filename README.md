@@ -25,5 +25,16 @@ paru paruse
 
 ## Preview
 
+> Browsing Repo's | Browsing Installed Packages
+
+<img src="https://github.com/user-attachments/assets/6ba5d42e-1a2d-49c0-a566-7837d6cbdba3" width="49%"/>
+<img src="https://github.com/user-attachments/assets/bdc6f812-faa4-4c1e-a339-8c940311e13c" width="49%"/>
+
+> Installing multiple packages | Managing packagelist backups
+
+<img src="https://github.com/user-attachments/assets/6f73d3ac-bef4-4f00-ba0a-e0f234756cad" width="49%"/>
+<img src="https://github.com/user-attachments/assets/7d91bfd8-6d11-4fb5-92c6-1138bb1ce8f1" width="49%"/>
+
+
 ![Vid_20250714_094941-ezgif com-crop](https://github.com/user-attachments/assets/6f73d3ac-bef4-4f00-ba0a-e0f234756cad)
 
