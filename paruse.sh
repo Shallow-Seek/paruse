@@ -40,7 +40,7 @@ options=(
     "9 • Package cache cleaning"
     "•"
     "10 • Sync current package list"
-    "11 • Install full package list"
+    "11 • Restore full package list"
     "12 • Backup current package list"
     "•"
     "13 • Fetch Arch Linux News"
@@ -98,8 +98,8 @@ help="
     Updates the saved package list file to match the currently installed explicit packages:
     ${yellowish}paru -Qqe | sort > \"\$packagelist\"${nocolor}
 
-11 • Install full package list
-    Reads from your saved packagelist and installs any missing packages:
+11 • Restore full package list
+    User can choose from packagelist backups to reinstall packages from:
     ${yellowish}paru -S --needed \$(< \"\$packagelist\")${nocolor}
     Install behavior can be set to Review Changes, Skip Review, or Only Show Progress using:
     ${yellowish}7 • Toggle review mode${nocolor}
@@ -109,11 +109,11 @@ help="
     ${yellowish}\$packagelist.backups/\$(date +%F_%H-%M-%S)${nocolor}
     This points to ${HOME}/.config/paruse/
 
-13• Fetch Arch Linux News
+13 • Fetch Arch Linux News
     Fetches Arch Linux News via:
     ${yellowish}paru -Pw${nocolor}
 
-14• Set custom bash_alias for Paruse
+14 • Set custom bash_alias for Paruse
     Allows you to set an alias (e.g., ${yellowish}paruse${nocolor}) for quick access to this tool from your shell config.
     This function is primary for use if Paruse was obtained through git. Although still useful for making more shortcuts.
 "
@@ -141,7 +141,7 @@ main_menu() {
         "8 • Package data briefing") paru -Ps && read -rp " • Press Enter to continue..." ;;
         "9 • Package cache cleaning") paru -Scc && read -rp " • Press Enter to continue..." ;;
         "10 • Sync current package list") sync_package_list ;;
-        "11 • Install full package list") install_list ;;
+        "11 • Restore full package list") install_list ;;
         "12 • Backup current package list") backup_package_list ;;
         "13 • Fetch Arch Linux News") fetch_news ;;
         "14 • Set a custom bash_alias for Paruse") set_alias ;;
