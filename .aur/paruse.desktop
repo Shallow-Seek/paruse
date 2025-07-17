@@ -1,0 +1,13 @@
+[Desktop Entry]
+
+Name=paruse
+Comment=An interactive package manager and browser using paru and fzf
+
+Icon=archlinux
+Type=Application
+Categories=Utility;
+Keywords=terminal;package;
+
+Exec=paruse
+StartupNotify=false
+Terminal=true
