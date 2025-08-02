@@ -1,5 +1,8 @@
 #!/bin/bash
-
+if [ -z "$BASH_VERSION" ]; then
+    exec /bin/bash "$0" "$@"
+    echo "• • • Operating in Bash..."
+fi
 # Installed packages (including aur) will be managed through packagelist (file) for portability and preservation
 # of compute resources when referring to the list later on. Also helps to replicate a system later on.
 # It can also be synced (basically rewritten) in the Interactive menu below.
