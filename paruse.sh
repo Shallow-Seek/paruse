@@ -234,6 +234,17 @@ https://aur.archlinux.org/packages/$pkg
 
 \e[34mPKGBUILD:\e[0m"
         curl -fsSL "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=$pkg" || echo "(Unable to fetch PKGBUILD)"
+
+        echo -e "\n\e[34mTREE:\e[0m"
+        # temporarily I can display full source tree here, I can definitely curl the links in the tree like above,
+        # but ensure what impact that will have on the browsing experiences' speed, maybe a different display structure.
+        curl -fsSL "https://aur.archlinux.org/cgit/aur.git/tree/?h=$pkg" | \
+        grep 'tree/' | \
+        sed -n 's/.*tree\/\([^?"]*\).*/\1/p' | \
+        sort -u | \
+        while read -r file; do
+            echo "https://aur.archlinux.org/cgit/aur.git/plain/$file?h=$pkg"
+        done
     else
         paru -Si "$pkg"
     fi
