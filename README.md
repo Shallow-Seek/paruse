@@ -12,11 +12,12 @@
 - You can browse Arch Repos in real-time, filter through packages <ins>**while you type**</ins> (not, after pressing `Enter`)
 - You can manage install/uninstall/purge, one package or multiple
 - Backup/restore packagelist, update system, clean cache, view Arch news, and a couple of other things
-- Interaction is not limited to keyboard, you can click through menus, and click to make selections.
+- Interaction is not limited to keyboard, you can click through menus, and click to make selections
+- Also only ~20Kib if that matters
 
 #### To use it paruse.. Download it from aur or git, and run paruse.
 - Type `paruse` in a terminal
-- Or launch `Paruse` via your favorite app launcher.
+- Or launch `Paruse` via your favorite app launcher
 - Git installations can use the .desktop file provided in 📂 `paruse/pkg/`
 ```
 paru -S paruse
