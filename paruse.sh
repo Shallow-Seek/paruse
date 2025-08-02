@@ -1,4 +1,7 @@
 #!/bin/bash
+if [ -n "$FISH_VERSION" ]; then
+    echo "• • • Running in Fish shell..."
+fi
 if [ -z "$BASH_VERSION" ]; then
     echo "• • • Sending operations to Bash..."
     exec /bin/bash "$0" "$@"
