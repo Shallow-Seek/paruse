@@ -28,7 +28,7 @@ fi
 blueish="\e[38;2;131;170;208m"; yellowish="\e[38;2;175;175;135m"; nocolor="\e[0m"
 options=(
     "1 • View package list"
-    "2 • Add package"
+    "2 • Add/Browse packages"
     "3 • Remove package"
     "4 • Purge package"
     "•"
@@ -59,7 +59,7 @@ help="
     This list can be filtered by all, only aur, no aur, packages using:
     ${yellowish}6 • Toggle view mode${nocolor}
 
-2 • Add package
+2 • Add or Browse packages
     Presents a query for all arch/aur repositories using:
     ${yellowish}paru -Slq | fzf --preview='paru -Si \{\}'${nocolor}
     User can browse packages and package data/details, see whats installed.
@@ -132,7 +132,7 @@ main_menu() {
 
     case "$choice" in
         "1 • View package list") view_package_list ;;
-        "2 • Add package") add_package ;;
+        "2 • Add/Browse packages") add_package ;;
         "3 • Remove package") remove_package ;;
         "4 • Purge package") purge_package ;;
         "5 • Toggle view mode") toggle_view_mode ;;
@@ -214,6 +214,25 @@ view_package_list() {
             ;;
     esac
 }
+preview_pkg() {
+    local pkg="$1"
+    pkg="${pkg// (installed)/}"  # remove " (installed)" suffix if present
+
+    if paru -Si "$pkg" 2>/dev/null | grep -iE "^Repository\s*:\s*aur"; then
+        paru -Si "$pkg"
+        echo -e "\e[34mREMINDER:\e[0m
+This is a package from the AUR (Arch User Repository). While votes and popularity are metrics for AUR packages, they do not guarantee that a package is vetted or safe. Always double check the package by reviewing the package build, and any other file included such as setup and install scripts. Thank you.
+
+\e[34mAUR LINK:\e[0m
+https://aur.archlinux.org/packages/$pkg
+
+\e[34mPKGBUILD:\e[0m"
+        curl -fsSL "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=$pkg" || echo "(Unable to fetch PKGBUILD)"
+    else
+        paru -Si "$pkg"
+    fi
+}
+export -f preview_pkg
 add_package() {
     echo -e "\n • Loading Repo(s)..."
     parusing="$config_dir/parusing"
@@ -223,7 +242,7 @@ add_package() {
 
     fzf_output=$(fzf \
         --print-query \
-        --preview='paru -Si $(echo {} | sed "s/ (installed)//")' \
+        --preview='preview_pkg {}' \
         --layout=reverse \
         --prompt="Enter/DBL-Click a package to add: " \
         --preview-window=wrap:50% \
