@@ -248,7 +248,7 @@ add_package() {
 
     fzf_output=$(fzf \
         --print-query \
-        --preview='preview_pkg {}' \
+        --preview='bash -c "preview_pkg {}"' \
         --layout=reverse \
         --prompt="Enter/DBL-Click a package to add: " \
         --preview-window=wrap:50% \
