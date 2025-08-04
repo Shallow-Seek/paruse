@@ -38,6 +38,6 @@ git clone https://github.com/soulhotel/paruse.git
 
 <img src="https://github.com/user-attachments/assets/6f73d3ac-bef4-4f00-ba0a-e0f234756cad" width="90%"/>
 
+> See a [video demonstration](https://www.youtube.com/watch?v=wn6xwm3MdTU) (on youtube).
 
-
-
+![Alt](https://repobeats.axiom.co/api/embed/306c2676dea1251899cdbc25b5b154add696a846.svg "Repobeats analytics image")
