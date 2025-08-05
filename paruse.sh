@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# shell compatibility /////////////////////////////////////////////////////////////////////////////////
+
 if [ -n "$FISH_VERSION" ]; then
     echo "• • • Running in Fish shell..."
 fi
@@ -6,22 +9,30 @@ if [ -z "$BASH_VERSION" ]; then
     echo "• • • Sending operations to Bash..."
     exec /bin/bash "$0" "$@"
 fi
-# Installed packages (including aur) will be managed through packagelist (file) for portability and preservation
-# of compute resources when referring to the list later on. Also helps to replicate a system later on.
-# It can also be synced (basically rewritten) in the Interactive menu below.
-# paru and fzf are requirements.
-# setup environment
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-config_dir="$HOME/.config/paruse"
-packagelist="$config_dir/my_package_list"
-viewmode="All"
-reviewmode="Review Changes"
+
+# dependency check ////////////////////////////////////////////////////////////////////////////////////
+
 for dep in paru fzf; do
     if ! command -v "$dep" &>/dev/null; then
         echo "• • • '$dep' not found. Installing..."
         sudo pacman -Sy --noconfirm "$dep"
     fi
 done
+
+# setup environment //////////////////////////////////////////////////////////////////////////////////
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+config_dir="$HOME/.config/paruse"
+packagelist="$config_dir/my_package_list"
+viewmode="All"
+reviewmode="Review Changes"
+(
+    echo "$(checkupdates | wc -l)" > /tmp/paruse_pacupdates # i learned some new background tech
+    echo "$(paru -Qua | wc -l)" > /tmp/paruse_aurupdates
+) &
+pacupdate=$(cat /tmp/paruse_pacupdates 2>/dev/null || echo "?")
+aurupdate=$(cat /tmp/paruse_aurupdates 2>/dev/null || echo "?")
+
 if [[ ! -d "$config_dir" ]]; then
     echo " • • • ./config/paruse created. A backup of your packages can be found here..."
     mkdir -p "$config_dir"
@@ -32,6 +43,14 @@ if [[ ! -s "$packagelist" ]]; then
     sleep 4
 fi
 blueish="\e[38;2;131;170;208m"; yellowish="\e[38;2;175;175;135m"; nocolor="\e[0m"
+
+# main menu ///////////////////////////////////////////////////////////////////////////////////////////
+
+# I could technically use a live preview pane for fzf,
+# and manage/manipulate the initial right pane info via a dedicated file,
+# but this is the approach i first started with...
+# doing it all in-script like this:
+
 options=(
     "1 • View package list"
     "2 • Add/Browse packages"
@@ -58,6 +77,11 @@ Paruse: Package Management for packages that you just cant live without
 View Mode: ${blueish}${viewmode}${nocolor}
 Review Mode: ${blueish}${reviewmode}${nocolor}
 "
+ucheck="
+Pacman updates available: ${blueish}${pacupdate}${nocolor}
+Aur updates available: ${blueish}${aurupdate}${nocolor}
+"
+placeholder="What other info would you like to see present in the paruse main menu? Pitch your ideas as an issue on ${blueish}https://github.com/soulhotel/paruse${nocolor}, anything ideas that can blend in well with light and basic operations can be implemented."
 help="
 1 • View package list
     Presents a list of explicitly installed packages on this system using:
@@ -124,7 +148,8 @@ help="
     This function is primary for use if Paruse was obtained through git. Although still useful for making more shortcuts.
 "
 
-# interactive process
+# interactive process //////////////////////////////////////////////////////////////////////////////////
+
 main_menu() {
     local choice
     choice=$(printf '%s\n' "${options[@]}" | fzf \
@@ -133,7 +158,7 @@ main_menu() {
         --prompt="Paruse › " \
         --height=95% \
         --preview-window=right:70%:wrap \
-        --preview="echo -e '$pstate\n$help'"
+        --preview="echo -e '$pstate\n$ucheck\n\n$placeholder\n$help'"
         )
 
     case "$choice" in
@@ -154,6 +179,8 @@ main_menu() {
         "q • Quit"|"") echo "Cya!"; exit ;;
     esac
 }
+
+# assign functionality //////////////////////////////////////////////////////////////////////////////////
 
 toggle_view_mode() {
     case $viewmode in
