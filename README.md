@@ -8,25 +8,19 @@
 
 ## Overview
 
-#### Paruse uses [paru](https://github.com/Morganamilo/paru) & [fzf](https://github.com/junegunn/fzf) to manage "goto" task centered around packages.
-- You can browse Arch Repos in real-time, filter through packages <ins>**while you type**</ins> (not, after pressing `Enter`)
-- You can manage install/uninstall/purge, one package or multiple
-- Backup/restore packagelist, update system, clean cache, view Arch news, and a couple of other things
-- Interaction is not limited to keyboard, you can click through menus, and click to make selections
-- Also only ~20Kib if that matters
+Paruse uses [paru](https://github.com/Morganamilo/paru) & [fzf](https://github.com/junegunn/fzf) to manage "goto" task centered around packages. It can browse Arch|Aur Repositories in real-time, filtering by package type, and searching through packages <ins>while you type</ins>. Install|Uninstall|Purge operations can be done for single packages or batch (multiple input). Packagelist are synced and can be backed up and restored from packagelist & packagelist-date&time files found in 📂 `~/.config/paruse`. Updating system, cleaning cache, viewing Arch News, are a couple of other things present in the Paruse Menu. Interaction is not limited to keyboard, you can click through menus, and click to make selections. Also only ~20Kib if that matters.
 
-#### To use it paruse.. Download it from aur or git, and run paruse.
-- Type `paruse` in a terminal
-- Or launch `Paruse` via your favorite app launcher
-- Git installations can use the .desktop file provided in 📂 `paruse/pkg/`
+> As of 0.5: When browsing/hovering an aur package, its pkgbuild and source tree are displayed along side package details.
+
+## Install
+
 ```
 paru -S paruse
 ```
 ```
 git clone https://github.com/soulhotel/paruse.git
 ```
-
-> No paru operations are suppressed, meaning intervention in a paru/pacman operation is as-is, paruse simply presents all information via fzf and passes it along to paru.
+> To summon paruse, type `paruse` in a terminal or launch it via your favorite app launcher. Git installations can use the .desktop file provided in 📂 `paruse/pkg/`
 
 ## Preview
 
@@ -46,6 +40,6 @@ git clone https://github.com/soulhotel/paruse.git
 
 <img src="https://github.com/user-attachments/assets/6f73d3ac-bef4-4f00-ba0a-e0f234756cad" width="90%"/>
 
+> See a [video demonstration](https://www.youtube.com/watch?v=wn6xwm3MdTU) (on youtube).
 
-
-
+![Alt](https://repobeats.axiom.co/api/embed/306c2676dea1251899cdbc25b5b154add696a846.svg "Repobeats analytics image")
