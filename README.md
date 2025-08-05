@@ -10,6 +10,8 @@
 
 Paruse uses [paru](https://github.com/Morganamilo/paru) & [fzf](https://github.com/junegunn/fzf) to manage "goto" task centered around packages. It can browse Arch|Aur Repositories in real-time, filtering by package type, and searching through packages <ins>while you type</ins>. Install|Uninstall|Purge operations can be done for single packages or batch (multiple input). Packagelist are synced and can be backed up and restored from packagelist & packagelist-date&time files found in 📂 `~/.config/paruse`. Updating system, cleaning cache, viewing Arch News, are a couple of other things present in the Paruse Menu. Interaction is not limited to keyboard, you can click through menus, and click to make selections. Also only ~20Kib if that matters.
 
+> As of 0.5: When browsing/hovering an aur package, its pkgbuild and source tree are displayed along side package details.
+
 ## Install
 
 ```
