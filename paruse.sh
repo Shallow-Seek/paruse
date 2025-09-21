@@ -24,6 +24,7 @@ done
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 config_dir="$HOME/.config/paruse"
 packagelist="$config_dir/my_package_list"
+packagecache="$config_dir/package_cache"
 viewmode="All"
 reviewmode="Review Changes"
 (
@@ -32,6 +33,11 @@ reviewmode="Review Changes"
 ) &
 pacupdate=$(cat /tmp/paruse_pacupdates 2>/dev/null || echo "?")
 aurupdate=$(cat /tmp/paruse_aurupdates 2>/dev/null || echo "?")
+
+# background cache update
+if [[ ! -f "$packagecache" ]] || [[ $(find "$packagecache" -mmin +60) ]]; then
+    (paru -Slq | sort > "$packagecache") &
+fi
 
 if [[ ! -d "$config_dir" ]]; then
     echo " • • • ./config/paruse created. A backup of your packages can be found here..."
@@ -70,6 +76,7 @@ options=(
     "•"
     "13 • Fetch Arch Linux News"
     "14 • Set a custom bash_alias for Paruse"
+    "15 • Update package cache now"
     "q • Quit"
 )
 pstate="
@@ -176,6 +183,7 @@ main_menu() {
         "12 • Backup current package list") backup_package_list ;;
         "13 • Fetch Arch Linux News") fetch_news ;;
         "14 • Set a custom bash_alias for Paruse") set_alias ;;
+        "15 • Update package cache now") update_package_cache ;;
         "q • Quit"|"") echo "Cya!"; exit ;;
     esac
 }
@@ -278,10 +286,16 @@ https://aur.archlinux.org/packages/$pkg
 }
 export -f preview_pkg
 add_package() {
-    echo -e "\n • Loading Repo(s)..."
+    if [[ ! -f "$packagecache" ]]; then
+        echo " • • • Package cache not found. Please wait a moment and try again."
+        echo " • • • The cache is being generated for the first time in the background."
+        sleep 4
+        return
+    fi
+    echo -e "\n • Loading from cache..."
     parusing="$config_dir/parusing"
-    comm -23 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$//' > "$parusing"
-    comm -12 <(paru -Slq | sort) <(paru -Qq | sort) | sed 's/$/ (installed)/' >> "$parusing"
+    comm -23 <(cat "$packagecache") <(paru -Qq | sort) | sed 's/$//' > "$parusing"
+    comm -12 <(cat "$packagecache") <(paru -Qq | sort) | sed 's/$/ (installed)/' >> "$parusing"
     sort "$parusing" -o "$parusing"
 
     fzf_output=$(fzf \
@@ -302,7 +316,6 @@ add_package() {
     fi
     if [[ -z "$pkg_input" ]]; then
         echo -e "\n • No package name entered."
-        sleep 2
     else
         for pkg in $pkg_input; do
             if grep -Fxq "$pkg" "$packagelist"; then
@@ -530,7 +543,15 @@ fetch_news() {
     paru -Pw
     read -rp " • Press Enter to continue..."
 }
+
+update_package_cache() {
+    echo " • • • Forcing package cache update in the background..."
+    (paru -Slq | sort > "$packagecache") &
+    sleep 2
+}
+
 sync_package_list() {
+
     if [[ ! -s "$packagelist" ]]; then
         echo -e "\n • packagelist is empty or missing. Populating with installed packages..."
     else
@@ -545,4 +566,3 @@ while true; do
     clear
     main_menu
 done
-
