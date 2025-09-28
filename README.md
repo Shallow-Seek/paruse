@@ -1,3 +1,8 @@
+add a cache file to speed up the "add/browse package"
+add an option to update the cache
+remove the sleep 2 secs if no package is selected.
+
+
 <div align="center">
 
 # Paruse
